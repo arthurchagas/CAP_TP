@@ -83,9 +83,11 @@ int main() {
 
 void proximoPasso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS) {
     if (cardS.card1.X != -1 && cardS.card2.X != -1) {
-        if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome)) {
-            cardFF[cardS.card1.X][cardS.card1.Y].status = false;
-            cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+        if (!((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y))) {
+            if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome)) {
+                cardFF[cardS.card1.X][cardS.card1.Y].status = false;
+                cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+            }
         }
 
         cardS.card1.X = -1;
