@@ -46,56 +46,83 @@ boolean existeNaMatriz(int [LINHAS][COLUNAS], int);
 void escolherCards(cardFromFile [LINHAS][COLUNAS]);
 void preencherMatriz(int [LINHAS][COLUNAS], int);
 void novoJogo(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS]);
-void escreverCorpo(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado);
-void salvarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado);
-void recuperarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado *);
-void proximoPasso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado);
-void escreverCabecalho();
+void escreverCorpo(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado, boolean);
+void salvarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado cardS, boolean);
+void recuperarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado *, boolean *);
+void proximoPasso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado, boolean);
+void escreverCabecalho(char code[DATA_TAMANHO], boolean refresh);
 
 int main() {
     char code[DATA_TAMANHO];
     char *dados = NULL;
-    long int tamanho = strtol(getenv("CONTENT_LENGTH"), NULL, 10);
+    long int tamanho;
     cardFromFile cardFF[LINHAS][COLUNAS];
     cardSelecionado cardS;
+    boolean refresh;
 
-    dados = (char *) malloc((size_t) (tamanho + 1));
-    if (dados) {
-        fgets(dados, tamanho + 1, stdin);
-        printf("Content-Type:text/html;charset=UTF-8\n\n");
-        if (!sscanf(dados, "coordX=%d&coordY=%d&code=%s", &cardS.card1.X, &cardS.card1.Y, code)) {
-            printf("Erro ao analisar entrada<br>");
-        } else {
-            if (!strcmp(code, "-1")) {
-                novoJogo(code, cardFF);
+    printf("Content-Type:text/html;charset=UTF-8\n\n");
+    if (!strcmp(getenv("REQUEST_METHOD"), "POST")) {
+        tamanho = strtol(getenv("CONTENT_LENGTH"), NULL, 10);
+        dados = (char *) malloc((size_t) (tamanho + 1));
+        if (dados) {
+            fgets(dados, tamanho + 1, stdin);
+            if (!sscanf(dados, "coordX=%d&coordY=%d&code=%s", &cardS.card1.X, &cardS.card1.Y, code)) {
+                printf("Erro ao analisar entrada<br>");
             } else {
-                recuperarProgresso(code, cardFF, &cardS);
-                proximoPasso(code, cardFF, cardS);
+                if (!strcmp(code, "-1")) {
+                    novoJogo(code, cardFF);
+                } else {
+                    recuperarProgresso(code, cardFF, &cardS, &refresh);
+                    proximoPasso(code, cardFF, cardS, refresh);
+                }
             }
+        } else {
+            printf("Erro ao alocar memoria para leitura de dados<br>");
         }
     } else {
-        printf("Erro ao alocar memoria para leitura de dados<br>");
+        dados = (char *) malloc(strlen(getenv("QUERY_STRING")) + 1);
+        if (dados) {
+            if (!sscanf(getenv("QUERY_STRING"), "code=%s", code)) {
+                printf("Erro ao analisar entrada<br>");
+            } else {
+                if (!strcmp(code, "-1")) {
+                    novoJogo(code, cardFF);
+                } else {
+                    cardS.card1.X = -1;
+                    cardS.card1.Y = -1;
+                    cardS.card2.X = -1;
+                    cardS.card2.Y = -1;
+
+                    recuperarProgresso(code, cardFF, &cardS, &refresh);
+                    proximoPasso(code, cardFF, cardS, refresh);
+                }
+            }
+        } else {
+            printf("Erro ao alocar memoria para leitura de dados<br>");
+        }
     }
     free(dados);
 
     return 0;
 }
 
-void proximoPasso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS) {
-    if (cardS.card1.X != -1 && cardS.card2.X != -1) {
-        if (!((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y)) && !strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome)) {
+void proximoPasso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS, boolean refresh) {
+    if (refresh) {
+        escreverCorpo(code, cardFF, cardS, false);
+        salvarProgresso(code, cardFF, cardS, false);
+    } else {
+        if (cardS.card1.X != -1 && cardS.card2.X != -1) {
+            if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome)) {
                 cardFF[cardS.card1.X][cardS.card1.Y].status = false;
                 cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+            }
+            escreverCorpo(code, cardFF, cardS, true);
+            salvarProgresso(code, cardFF, cardS, true);
+        } else {
+            escreverCorpo(code, cardFF, cardS, false);
+            salvarProgresso(code, cardFF, cardS, false);
         }
-
-        cardS.card1.X = -1;
-        cardS.card1.Y = -1;
-        cardS.card2.X = -1;
-        cardS.card2.Y = -1;
     }
-
-    escreverCorpo(code, cardFF, cardS);
-    salvarProgresso(code, cardFF, cardS);
 }
 
 void novoJogo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS]) {
@@ -108,11 +135,11 @@ void novoJogo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS]) {
 
     sprintf(code, "%lld", time(NULL));
     escolherCards(cardFF);
-    escreverCorpo(code, cardFF, cardS);
-    salvarProgresso(code, cardFF, cardS);
+    escreverCorpo(code, cardFF, cardS, false);
+    salvarProgresso(code, cardFF, cardS, false);
 }
 
-void salvarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS) {
+void salvarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS, boolean refresh) {
     int i, j;
     FILE *data = NULL;
     char *nomeArquivo = NULL;
@@ -126,7 +153,7 @@ void salvarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNA
 
         data = fopen(nomeArquivo, "w");
         if (data != NULL) {
-            fprintf(data, "card1:%d,%d&card2:%d,%d\n", cardS.card1.X, cardS.card1.Y, cardS.card2.X, cardS.card2.Y);
+            fprintf(data, "card1:%d,%d&card2:%d,%d&refresh=%d\n", cardS.card1.X, cardS.card1.Y, cardS.card2.X, cardS.card2.Y, refresh);
             for (i = 0; i < LINHAS; ++i) {
                 for (j = 0; j < COLUNAS; ++j) {
                     fprintf(data, "status:%d&file:%s\n", cardFF[i][j].status, cardFF[i][j].nome);
@@ -139,7 +166,7 @@ void salvarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNA
     free(nomeArquivo);
 }
 
-void recuperarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado *cardS) {
+void recuperarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado *cardS, boolean *refresh) {
     char aux[RSC_NOME_TAMANHO + RSC_EXTENSAO_TAMANHO];
     int i = 0, j = 0;
     char *nomeArquivo;
@@ -163,8 +190,8 @@ void recuperarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COL
         buffer = (char *) malloc((size_t) (tamanhoArquivo + 1));
         if (buffer) {
             if (fread(buffer, (size_t) tamanhoArquivo, 1, data) == 1) {
-                sscanf(buffer, "card1:%d,%d&card2:%d,%d", &(cardSBuffer.card1.X), &(cardSBuffer.card1.Y),
-                       &(cardSBuffer.card2.X), &(cardSBuffer.card2.Y));
+                sscanf(buffer, "card1:%d,%d&card2:%d,%d&refresh=%d", &(cardSBuffer.card1.X), &(cardSBuffer.card1.Y),
+                       &(cardSBuffer.card2.X), &(cardSBuffer.card2.Y), refresh);
 
                 if (cardSBuffer.card1.X == -1 && (*cardS).card1.X != -1) {
                     (*cardS).card2.X = -1;
@@ -207,11 +234,11 @@ void recuperarProgresso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COL
     free(nomeArquivo);
 }
 
-void escreverCorpo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS) {
+void escreverCorpo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS, boolean refresh) {
     int i, j;
 
     printf("<html>");
-    escreverCabecalho();
+    escreverCabecalho(code, refresh);
     printf("<body>");
     printf("<a>");
 
@@ -219,15 +246,15 @@ void escreverCorpo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS]
         for (j = 0; j < COLUNAS; ++j) {
             if (cardFF[i][j].status) {
                 printf("<form action=\"%s\" method=\"post\">", SRV_CAMINHO);
-                printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\">", i);
-                printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\">", j);
-                printf("<input type=\"hidden\" name=\"code\" value=\"%s\">", code);
-                if (!(i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
-                    printf("<input type=\"submit\" value=\"\" style=\"background-image: url(%s/%s); border: solid 0px #000000; width: 160px; height: 160px;\"/>",
-                           RSC_LOCAL, RSC_SELECT);
-                } else {
+                printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\"/>", i);
+                printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\"/>", j);
+                printf("<input type=\"hidden\" name=\"code\" value=\"%s\"/>", code);
+                if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
                     printf("<input type=\"submit\" value=\"\" style=\"background-image: url(%s/%s); border: solid 0px #000000; width: 160px; height: 160px;\"/>",
                            RSC_LOCAL, cardFF[i][j].nome);
+                } else {
+                    printf("<input type=\"submit\" value=\"\" style=\"background-image: url(%s/%s); border: solid 0px #000000; width: 160px; height: 160px;\"/>",
+                           RSC_LOCAL, RSC_SELECT);
                 }
                 printf("</form>");
             } else {
@@ -241,12 +268,14 @@ void escreverCorpo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS]
     printf("</html>");
 }
 
-void escreverCabecalho() {
-    printf("<head>"),
-            printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\">"),
-            printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\">", CSS_LOCAL),
-            printf("<title>Jogo de CAP</title>"),
-            printf("</head>");
+void escreverCabecalho(char code[DATA_TAMANHO], boolean refresh) {
+    printf("<head>");
+    printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
+    if (refresh)
+        printf("<meta http-equiv=\"refresh\" content=\"1; url=%s?code=%s\" />", SRV_CAMINHO, code);
+    printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
+    printf("<title>Jogo de CAP</title>");
+    printf("</head>");
 }
 
 void escolherCards(cardFromFile cardFF[LINHAS][COLUNAS]) {
