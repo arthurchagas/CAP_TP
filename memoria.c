@@ -245,21 +245,31 @@ void escreverCorpo(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS]
     for (i = 0; i < LINHAS; ++i) {
         for (j = 0; j < COLUNAS; ++j) {
             if (cardFF[i][j].status) {
-                printf("<form action=\"%s\" method=\"post\">", SRV_CAMINHO);
-                printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\"/>", i);
-                printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\"/>", j);
-                printf("<input type=\"hidden\" name=\"code\" value=\"%s\"/>", code);
-                if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
-                    printf("<img src=%s/%s style=\"background-image: border: solid 0px #000000; width: 160px; height: 160px;\"/>",
-                           RSC_LOCAL, cardFF[i][j].nome);
+                if (cardS.card1.X != -1 && cardS.card2.X != -1) {
+                    if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
+                        printf("<img src=%s/%s style=\"border: solid 0px #000000; width: 160px; height: 160px;\"/>",
+                               RSC_LOCAL, cardFF[i][j].nome);
+                    } else {
+                        printf("<img src=%s/%s style=\"border: solid 0px #000000; width: 160px; height: 160px;\"/>",
+                               RSC_LOCAL, RSC_SELECT);
+                    }
                 } else {
-                    printf("<input type=\"submit\" value=\"\" style=\"background-image: url(%s/%s); border: solid 0px #000000; width: 160px; height: 160px;\"/>",
-                           RSC_LOCAL, RSC_SELECT);
+                    printf("<form action=\"%s\" method=\"post\">", SRV_CAMINHO);
+                    printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\"/>", i);
+                    printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\"/>", j);
+                    printf("<input type=\"hidden\" name=\"code\" value=\"%s\"/>", code);
+                    if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
+                        printf("<img src=%s/%s style=\"border: solid 0px #000000; width: 160px; height: 160px;\"/>",
+                               RSC_LOCAL, cardFF[i][j].nome);
+                    } else {
+                        printf("<input type=\"submit\" value=\"\" style=\"background-image: url(%s/%s); border: solid 0px #000000; width: 160px; height: 160px;\"/>",
+                               RSC_LOCAL, RSC_SELECT);
+                    }
+                    printf("</form>");
                 }
-                printf("</form>");
             } else {
                 printf("<img src=%s/%s style=\"border: solid 0px #000000; width: 160px; height: 160px;\"/>",
-                           RSC_LOCAL, RSC_OK);
+                       RSC_LOCAL, RSC_OK);
             }
         }
     }
