@@ -50,7 +50,8 @@ void escreverCorpo(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSele
 void salvarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado cardS, boolean, int);
 void recuperarProgresso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado *, boolean *, int *);
 void proximoPasso(char [DATA_TAMANHO], cardFromFile [LINHAS][COLUNAS], cardSelecionado, boolean, int);
-void escreverCabecalho(char code[DATA_TAMANHO], boolean refresh);
+void escreverCabecalho(char [DATA_TAMANHO], boolean);
+boolean terminou(cardFromFile [LINHAS][COLUNAS]);
 
 int main() {
     char code[DATA_TAMANHO];
@@ -108,21 +109,26 @@ int main() {
 }
 
 void proximoPasso(char code[DATA_TAMANHO], cardFromFile cardFF[LINHAS][COLUNAS], cardSelecionado cardS, boolean refresh, int cardFlip) {
-    if (refresh) {
-        escreverCorpo(code, cardFF, cardS, false);
-        salvarProgresso(code, cardFF, cardS, false, cardFlip);
-    } else {
-        if (cardS.card1.X != -1 && cardS.card2.X != -1) {
-            if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome) && !((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y))) {
-                cardFF[cardS.card1.X][cardS.card1.Y].status = false;
-                cardFF[cardS.card2.X][cardS.card2.Y].status = false;
-            }
-            escreverCorpo(code, cardFF, cardS, true);
-            salvarProgresso(code, cardFF, cardS, true, cardFlip);
-        } else {
+    if (!terminou(cardFF)) {
+        if (refresh) {
             escreverCorpo(code, cardFF, cardS, false);
             salvarProgresso(code, cardFF, cardS, false, cardFlip);
+        } else {
+            if (cardS.card1.X != -1 && cardS.card2.X != -1) {
+                if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome) &&
+                    !((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y))) {
+                    cardFF[cardS.card1.X][cardS.card1.Y].status = false;
+                    cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+                }
+                escreverCorpo(code, cardFF, cardS, true);
+                salvarProgresso(code, cardFF, cardS, true, cardFlip);
+            } else {
+                escreverCorpo(code, cardFF, cardS, false);
+                salvarProgresso(code, cardFF, cardS, false, cardFlip);
+            }
         }
+    } else {
+        printf("Fim!<br>");
     }
 }
 
@@ -348,6 +354,17 @@ boolean existeNaMatriz(int matriz[LINHAS][COLUNAS], int n) {
                 return true;
 
     return false;
+}
+
+boolean terminou(cardFromFile cardFF[LINHAS][COLUNAS]) {
+    int i, j;
+
+    for (i = 0; i < LINHAS; ++i)
+        for (j = 0; j < COLUNAS; ++j)
+            if (cardFF[i][j].status)
+                return false;
+
+    return true;
 }
 
 void preencherMatriz(int matriz[LINHAS][COLUNAS], int n) {
