@@ -65,4 +65,4 @@ int ordenarLeaderboard(const void *s1, const void *s2);
 void pedirNomeParaLeaderboard (int, tCardPar);
 void processarLeaderboard(int, int, tCardPar);
 void fimDeJogo();
-void adicionarAoLeaderboard(int, int, tCardPar, char *);
+void adicionarAoLeaderboard(int, int, tCardPar, char *, char []);

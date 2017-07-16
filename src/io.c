@@ -126,16 +126,11 @@ void recuperarProgresso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar 
         buffer = (char *) malloc((size_t) (tamanho + 1));
         if (buffer) {
             if (fread(buffer, (size_t) tamanho, 1, data) == 1) {
-                sscanf(buffer, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d", &(cardSBuffer.card1.X),
-                       &cardSBuffer.card1.Y,
-                       &cardSBuffer.card2.X, &cardSBuffer.card2.Y, refresh, contadorDeCliques, &cardS->linhas, &cardS->colunas);
+                sscanf(buffer, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d", &cardSBuffer.card1.X,
+                       &cardSBuffer.card1.Y, &cardSBuffer.card2.X, &cardSBuffer.card2.Y, refresh, contadorDeCliques,
+                       &cardS->linhas, &cardS->colunas);
 
-                if (cardSBuffer.card1.X == -1 && (*cardS).card1.X != -1) {
-                    cardS->card2.X = -1;
-                    cardS->card2.Y = -1;
-                }
-
-                if (cardSBuffer.card1.X != -1 && (*cardS).card1.X != -1) {
+                if (cardSBuffer.card1.X != -1 && cardS->card1.X != -1) {
                     cardS->card2.X = cardSBuffer.card1.X;
                     cardS->card2.Y = cardSBuffer.card1.Y;
                 }
@@ -198,7 +193,7 @@ void escreverCorpo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS
                         printf("<img src=%s/%s>", RSC_LOCAL, RSC_SELECT);
                     }
                 } else {
-                    printf("<form action=\"%s\" method=\"post\">", CGI_CAMINHO);
+                    printf("<form action=\"%s\" method=\"get\">", CGI_CAMINHO);
                     printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\"/>", i);
                     printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\"/>", j);
                     printf("<input type=\"hidden\" name=\"d\" value=\"%dx%d\"/>", cardS.linhas, cardS.colunas);
@@ -346,7 +341,7 @@ void pedirNomeParaLeaderboard (int contadorDeCliques, tCardPar cardS) {
     printf("<body>");
     printf("<div class=\"centro_absoluto\">");
     printf("Obrigado por jogar!<br>Insira seu nome para o placar!<br>");
-    printf("<form action=%s method=\"post\">", CGI_CAMINHO);
+    printf("<form action=%s method=\"get\">", CGI_CAMINHO);
     printf("<input type=\"hidden\" name=\"Leaderboard\" value=\"Leaderboard\">");
     printf("<input type=\"hidden\" name=\"d\" value=\"%dx%d\">", cardS.linhas, cardS.colunas);
     printf("<input type=\"hidden\" name=\"jogadas\" value=\"%d\">", contadorDeCliques);

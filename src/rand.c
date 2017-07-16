@@ -16,7 +16,6 @@
 void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
     // Controladores de Laço
     int i, j;
-    boolean continuar = true;
 
     // Matriz Auxiliar
     int numerosAleatorios[LINHAS_MAX][COLUNAS_MAX];
@@ -24,6 +23,7 @@ void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
     // Números Aleatórios
     int r;                  // Número "aleatório" entre 0 e RSC_QUANTIDADE - 1
     int s, t, u, v;         // Posições "aleatórias" entre 0 e RND_MAXIMO - RND_MINIMO - 1
+    int def = 0;
 
     // Inicializar matriz
     preencherMatriz(numerosAleatorios, -1, cardS);
@@ -31,7 +31,7 @@ void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
     // Determinar seed de randomização
     srand((unsigned int) time(NULL));
 
-    while (continuar) {
+    while (def < cardS.linhas * cardS.colunas) {
         r = rand() % RSC_QUANTIDADE;
         s = rand() % cardS.linhas;
         t = rand() % cardS.colunas;
@@ -39,19 +39,13 @@ void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
         v = rand() % cardS.colunas;
 
 
-        // Posições s,t e u,v não são iguais
-        if (!(s == u && t == v)) {
-            // Posições s,t e u,v não receberam um número
-            if (numerosAleatorios[s][t] == -1 && numerosAleatorios[u][v] == -1) {
-                // Número r não ocorreu na matriz
-                if (!existeNaMatriz(numerosAleatorios, r, cardS)) {
-                    numerosAleatorios[s][t] = r;
-                    numerosAleatorios[u][v] = r;
-                }
-            } else {
-                // Verificar se ainda existe alguma posição que não recebeu um número
-                continuar = existeNaMatriz(numerosAleatorios, -1, cardS);
-            }
+        if (!(s == u && t == v) &&                                                  // Posições s,t e u,v não são iguais
+                numerosAleatorios[s][t] == -1 && numerosAleatorios[u][v] == -1 &&   // Posições s,t e u,v não receberam um número
+                !existeNaMatriz(numerosAleatorios, r, cardS)) {                     // Número r não ocorreu na matriz
+            numerosAleatorios[s][t] = r;
+            numerosAleatorios[u][v] = r;
+
+            def += 2;
         }
     }
 

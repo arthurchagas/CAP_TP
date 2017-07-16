@@ -19,9 +19,10 @@ void paginaLeaderboard(int max_posicoes) {
     escreverLeaderboard(placar, max_posicoes);
 }
 
-void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char * nome) {
+void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char * nome, char code[]) {
     tPlacar placar[max_posicoes + 1];
     int posicoes, i;
+    char nomeArquivo[DATA_TAMANHO + strlen(DATA_EXTENSAO)];
 
     recuperarLeaderboard(placar, &posicoes);
 
@@ -38,6 +39,10 @@ void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar ca
     qsort(placar, (size_t) (max_posicoes + 1), sizeof(tPlacar), &ordenarLeaderboard);
 
     salvarLeaderboard(placar, posicoes + 1);
+
+    strcpy(nomeArquivo, code);
+    strcat(nomeArquivo, DATA_EXTENSAO);
+    remove(nomeArquivo);
 }
 
 void processarLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS) {

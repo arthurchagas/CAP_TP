@@ -9,55 +9,47 @@
 int main() {
     char code[DATA_TAMANHO], *dados = NULL, nome[LEADERBOARD_NOME_TAMANHO];
     int contadorDeCliques = 0;
-    long int tamanho;
     tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX];
     tCardPar cardS;
     boolean refresh;
     short int leaderboard;
 
-    printf("Content-Type:text/html;charset=UTF-8\n\n");
-    if (!strcmp(getenv("REQUEST_METHOD"), "POST")) {
-        tamanho = strtol(getenv("CONTENT_LENGTH"), NULL, 10);
-        dados = (char *) malloc((size_t) (tamanho + 1));
-        if (dados) {
-            fread(dados, (size_t) (tamanho + 1), 1, stdin);
-            analisarEntrada(code, dados, &cardS, &leaderboard, &contadorDeCliques, nome);
-            if (!leaderboard) {
-                if (!strcmp(code, "-1")) {
-                    novoJogo(code, cardFF, cardS);
-                } else {
-                    recuperarProgresso(code, cardFF, &cardS, &refresh, &contadorDeCliques);
-                    proximoPasso(code, cardFF, cardS, contadorDeCliques + 1, refresh);
-                }
-            } else {
-                if (leaderboard == 2)
-                    adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome);
+    // Inicializar cardS
+    cardS.card1.X = -1;
+    cardS.card1.Y = -1;
+    cardS.card2.X = -1;
+    cardS.card2.Y = -1;
 
-                paginaLeaderboard(LEADERBOARD_POSICOES);
-            }
-        } else {
-            printf("Erro ao alocar memoria para leitura de dados<br>");
-        }
-    } else {
-        dados = (char *) malloc(strlen(getenv("QUERY_STRING")) + 1);
-        if (dados) {
-            if (!sscanf(getenv("QUERY_STRING"), "code=%s", code)) {
-                printf("Erro ao analisar entrada<br>");
+    printf("Content-Type:text/html;charset=UTF-8\n\n");
+    dados = (char *) malloc(strlen(getenv("QUERY_STRING")) + 1);
+    if (dados) {
+        analisarEntrada(code, getenv("QUERY_STRING"), &cardS, &leaderboard, &contadorDeCliques, nome);
+
+        if (!leaderboard) {
+            if (!strcmp(code, "-1")) {
+                novoJogo(code, cardFF, cardS);
             } else {
-                if (strcmp(code, "-1")) {
+                recuperarProgresso(code, cardFF, &cardS, &refresh, &contadorDeCliques);
+
+                if (refresh) {
                     cardS.card1.X = -1;
                     cardS.card1.Y = -1;
                     cardS.card2.X = -1;
                     cardS.card2.Y = -1;
-
-                    recuperarProgresso(code, cardFF, &cardS, &refresh, &contadorDeCliques);
-                    proximoPasso(code, cardFF, cardS, contadorDeCliques, refresh);
                 }
+
+                proximoPasso(code, cardFF, cardS, contadorDeCliques + !refresh, refresh);
             }
         } else {
-            printf("Erro ao alocar memoria para leitura de dados<br>");
+            if (leaderboard == 2)
+                adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome, code);
+
+            paginaLeaderboard(LEADERBOARD_POSICOES);
         }
+    } else {
+        printf("Erro ao alocar memoria para leitura de dados<br>");
     }
+
     free(dados);
 
     return 0;
@@ -108,9 +100,6 @@ void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
  *              tCardPar cardS : novo tCardPar preenchido com -1 (nenhuma tCard selecionada)
  */
 void novoJogo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
-    cardS.card2.X = -1;
-    cardS.card2.Y = -1;
-
     sprintf(code, "%lld", time(NULL));
     escolherCards(cardFF, cardS);
     escreverCorpo(code, cardFF, cardS, false);
