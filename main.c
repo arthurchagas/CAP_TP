@@ -7,11 +7,11 @@
 
 
 int main() {
-    char code[DATA_TAMANHO], *dados = NULL, nome[LEADERBOARD_NOME_TAMANHO];
+    char code[DATA_TAMANHO], nome[LEADERBOARD_NOME_TAMANHO], *queryString = NULL;
     int contadorDeCliques = 0;
     tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX];
     tCardPar cardS;
-    boolean refresh;
+    boolean recarregarPagina;
     short int leaderboard;
 
     // Inicializar cardS
@@ -21,36 +21,48 @@ int main() {
     cardS.card2.Y = -1;
 
     printf("Content-Type:text/html;charset=UTF-8\n\n");
-    dados = (char *) malloc(strlen(getenv("QUERY_STRING")) + 1);
-    if (dados) {
-        analisarEntrada(code, getenv("QUERY_STRING"), &cardS, &leaderboard, &contadorDeCliques, nome);
+
+    // Alocar memoria para a string do method "get"
+    queryString = (char *) malloc(strlen(getenv("QUERY_STRING")) + 1);
+
+    if (queryString) {
+        // Extrai informações da query_string
+        analisarEntrada(getenv("QUERY_STRING"), code, &cardS, &leaderboard, &contadorDeCliques, nome);
 
         if (!leaderboard) {
+            // Codigo do jogo é -1, sinalizando novo jogo
             if (!strcmp(code, "-1")) {
                 novoJogo(code, cardFF, cardS);
             } else {
-                recuperarProgresso(code, cardFF, &cardS, &refresh, &contadorDeCliques);
+                // Recuperar progresso do jogo
+                recuperarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, &cardS, &recarregarPagina, &contadorDeCliques);
 
-                if (refresh) {
+                // Página será recarregada e reseta o par selecionado
+                if (recarregarPagina) {
                     cardS.card1.X = -1;
                     cardS.card1.Y = -1;
                     cardS.card2.X = -1;
                     cardS.card2.Y = -1;
                 }
 
-                proximoPasso(code, cardFF, cardS, contadorDeCliques + !refresh, refresh);
+                // Determina o próximo passo do jogo
+                proximoPasso(code, cardFF, cardS, contadorDeCliques + !recarregarPagina, recarregarPagina);
             }
         } else {
-            if (leaderboard == 2)
-                adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome, code);
+            if (leaderboard == 2) {
+                // Adiciona um novo usuário ao placar
+                adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome);
+            }
 
+            // Mostra página do placar
             paginaLeaderboard(LEADERBOARD_POSICOES);
         }
     } else {
         printf("Erro ao alocar memoria para leitura de dados<br>");
     }
 
-    free(dados);
+    // Libera memória alocada para a query_string
+    free(queryString);
 
     return 0;
 }
@@ -60,32 +72,54 @@ int main() {
  * Objetivo: determinar o próximo passo a ser tomado
  * Parâmetros formais:
  *      Dados de entrada:
- *              char code[DATA_TAMANHO] : código da instância do jogo
- *              tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] : matriz LINHAS_MAX x COLUNAS_MAX de tInstancia contendo a imagem de cada posição
- *              tCardPar cardS : contém as informações do último par de cartas selecionado anteriormente
- *              contadorDeCliques : contém a contagem de cards já viradas
- *              boolean refresh : flag de recarregamento da página
+ *              char code[] : código da instância do jogo
+ *              tInstancia cardFF[][COLUNAS_MAX] : matriz contendo a imagem de cada posição
+ *              tCardPar cardS : contém as informações do último par de cartas selecionado anteriormente, além da dimensão do jogo
+ *              contadorDeCliques : contém a contagem de rounds
+ *              boolean recarregarPagina : flag de recarregamento da página
  */
-void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, int contadorDeCliques, boolean refresh) {
+void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, int contadorDeCliques, boolean recarregarPagina) {
+    // Checar pelo fim do jogo
     if (!checarStatus(cardFF, cardS)) {
-        if (refresh) {
+        // Jogo não terminou
+
+        if (recarregarPagina) {
+            // Página foi recarregada, gerar próxima página
+
             escreverCorpo(code, cardFF, cardS, false);
-            salvarProgresso(code, cardFF, cardS, false, contadorDeCliques);
+            salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, contadorDeCliques);
         } else {
             if (cardS.card1.X != -1 && cardS.card2.X != -1) {
-                if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome) &&
-                    !((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y))) {
-                    cardFF[cardS.card1.X][cardS.card1.Y].status = false;
-                    cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+                // Par de cards não é nulo
+
+                if (!strcmp(cardFF[cardS.card1.X][cardS.card1.Y].nome, cardFF[cardS.card2.X][cardS.card2.Y].nome)) {        // Cards tem o mesmo nome de arquivo
+                    if (!((cardS.card1.X == cardS.card2.X) && (cardS.card1.Y == cardS.card2.Y))) {                          // Não é a mesma posição
+                        // Marcar par como concluído
+
+                        cardFF[cardS.card1.X][cardS.card1.Y].status = false;
+                        cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+                    } else {                                                                                                // É a mesma posição
+                        // Resetar cards selecionados
+
+                        cardS.card1.X = -1;
+                        cardS.card1.Y = -1;
+                        cardS.card2.X = -1;
+                        cardS.card2.Y = -1;
+                    }
                 }
+
+                // Par escolhido, gerar página com tag de recarregamento
                 escreverCorpo(code, cardFF, cardS, true);
-                salvarProgresso(code, cardFF, cardS, true, contadorDeCliques);
+                salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, true, contadorDeCliques);
             } else {
+
+                // Primeira card do par selecionada
                 escreverCorpo(code, cardFF, cardS, false);
-                salvarProgresso(code, cardFF, cardS, false, contadorDeCliques);
+                salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, contadorDeCliques);
             }
         }
     } else {
+        // Fim de jogo
         processarLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS);
     }
 }
@@ -95,15 +129,20 @@ void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
  * Objetivo: iniciar uma nova instância do jogo
  * Parâmetros formais:
  *      Dados de saída:
- *              char code[DATA_TAMANHO] : novo código da instância do jogo
- *              tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] : nova matriz LINHAS_MAX x COLUNAS_MAX de tInstancia da instância do jogo
+ *              char code[] : código da instância do jogo
+ *              tInstancia cardFF[][COLUNAS_MAX] : matriz contendo a imagem de cada posição
  *              tCardPar cardS : novo tCardPar preenchido com -1 (nenhuma tCard selecionada)
  */
 void novoJogo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
+    // Gera novo código
     sprintf(code, "%lld", time(NULL));
+
+    // Escolhe as cards e suas posições que estarão no jogo
     escolherCards(cardFF, cardS);
+
+    // Primeira página
     escreverCorpo(code, cardFF, cardS, false);
-    salvarProgresso(code, cardFF, cardS, false, 0);
+    salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, 0);
 }
 
 /*

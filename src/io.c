@@ -11,15 +11,18 @@
  *      Dados de entrada:
  *              char *dados : string crua de dados
  *      Dados de saída:
- *              char code[DATA_TAMANHO] : código da instância do jogo extraída de *dados
+ *              char code[] : código da instância do jogo extraída de *dados
  *              tCardPar *cardS : informações sobre a última tCard selecionada anteriormente e as dimensões da instância do jogo extraídas de *dados
+ *              short int *leaderboard : flag para exibição do leaderboard
+ *              int *contadorDeCards : contagem de rounds do jogo
+ *              char nome[] : nome do usuário para o leaderboard
  */
-void analisarEntrada(char code[], char *dados, tCardPar *cardS, short int *leaderboard, int * contadorDeCards, char nome[]) {
+void analisarEntrada(char *dados, char code[], tCardPar *cardS, short int *leaderboard, int * contadorDeCards, char nome[]) {
     char *token;
 
-    if (strstr(dados, "Leaderboard=Leaderboard")) {
+    if (strstr(dados, "Leaderboard=Leaderboard")) {             // "Leaderboard=Leaderboard"
         *leaderboard = 1;
-        if (strstr(dados, "Leaderboard=Leaderboard&")) {
+        if (strstr(dados, "Leaderboard=Leaderboard&")) {        // "Leaderboard=Leaderboard&d=%dx%d&jogadas=%d&nome=%s
             *leaderboard = 2;
             token = strtok(dados, "&");
             while (token != NULL) {
@@ -36,7 +39,7 @@ void analisarEntrada(char code[], char *dados, tCardPar *cardS, short int *leade
     } else {
         *leaderboard = 0;
         token = strtok(dados, "&");
-        while (token != NULL) {
+        while (token != NULL) {                                 // "coordX=%d&coordY=%d&d=%dx%d&code=%s
             if (strstr(token, "coordX=") != NULL)
                 sscanf(token, "coordX=%d", &cardS->card1.X);
             else if (strstr(token, "coordY=") != NULL)
@@ -56,39 +59,37 @@ void analisarEntrada(char code[], char *dados, tCardPar *cardS, short int *leade
  * Objetivo: salva o progresso de uma instância do jogo
  * Parâmetros formais:
  *      Dados de entrada:
- *              char code[DATA_TAMANHO] : código da instância do jogo
- *              tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] : matriz LINHAS_MAX x COLUNAS_MAX de tInstancia a ser escrita para o arquivo
- *              tCardPar cardS : tCardPar a ser escrito para o arquivo
- *              boolean refresh : flag de refresh a ser escrita para o arquivo
- *              int contadorDeCliques : contagem de cards viradas a ser escrita para o arquivo
+ *              char code[] : código da instância do jogo
+ *              tInstancia cardFF[][COLUNAS_MAX] : matriz contendo a imagem de cada posição
+ *              tCardPar cardS : contém as informações do último par de cartas selecionado anteriormente, além da dimensão do jogo
+ *              boolean recarregarPagina : flag de recarregamento da página
+ *              int contadorDeCliques : contagem de rounds do jogo
  */
-void salvarProgresso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
-                     boolean refresh, int contadorDeCliques) {
+void salvarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, boolean recarregarPagina, int contadorDeCliques) {
     int i, j;
     FILE *data = NULL;
-    char *nomeArquivo = NULL;
+    char nomeArquivo[strlen(DATA_LOCAL) + strlen(code) + strlen(DATA_EXTENSAO) + 1];
 
-    nomeArquivo = (char *) malloc(strlen(DATA_LOCAL) + strlen(code) + strlen(DATA_EXTENSAO) + 1);
+    // Deduz o nome do arquivo com posição relativa
+    strcpy(nomeArquivo, DATA_LOCAL);
+    strcat(nomeArquivo, code);
+    strcat(nomeArquivo, DATA_EXTENSAO);
 
-    if (nomeArquivo != NULL) {
-        strcpy(nomeArquivo, DATA_LOCAL);
-        strcat(nomeArquivo, code);
-        strcat(nomeArquivo, DATA_EXTENSAO);
-
-        data = fopen(nomeArquivo, "w");
-        if (data != NULL) {
-            fprintf(data, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d\n", cardS.card1.X, cardS.card1.Y,
-                    cardS.card2.X, cardS.card2.Y, refresh, contadorDeCliques, cardS.linhas, cardS.colunas);
-            for (i = 0; i < cardS.linhas; ++i) {
-                for (j = 0; j < cardS.colunas; ++j) {
-                    fprintf(data, "status:%d&file:%s\n", cardFF[i][j].status, cardFF[i][j].nome);
-                }
+    // Abre o arquivo para escrita
+    data = fopen(nomeArquivo, "w");
+    if (data != NULL) {
+        // Salva informações relevantes
+        fprintf(data, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d\n", cardS.card1.X,
+                cardS.card1.Y, cardS.card2.X, cardS.card2.Y, recarregarPagina, contadorDeCliques,
+                cardS.linhas, cardS.colunas);
+        for (i = 0; i < cardS.linhas; ++i) {
+            for (j = 0; j < cardS.colunas; ++j) {
+                fprintf(data, "status:%d&file:%s\n", cardFF[i][j].status, cardFF[i][j].nome);
             }
         }
         fflush(data);
         fclose(data);
     }
-    free(nomeArquivo);
 }
 
 /*
@@ -103,8 +104,7 @@ void salvarProgresso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar car
  *          boolean *refresh : flag de refresh recuperado do arquivo de progresso
  *          int *contadorDeCliques : contagem de cards viradas recuperada do arquivo de progresso
  */
-void recuperarProgresso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar *cardS,
-                        boolean *refresh, int *contadorDeCliques) {
+void recuperarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar *cardS, boolean *refresh, int *contadorDeCliques) {
     char aux[RSC_NOME_TAMANHO + RSC_EXTENSAO_TAMANHO];
     int i = 0, j = 0;
     char *nomeArquivo;
@@ -113,11 +113,11 @@ void recuperarProgresso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar 
     long int tamanho;
     tCardPar cardSBuffer;
 
-    nomeArquivo = (char *) malloc(strlen(DATA_LOCAL) + strlen(code) + strlen(DATA_EXTENSAO) + 1);
+    nomeArquivo = (char *) malloc(strlen(local) + strlen(code) + strlen(extensao) + 1);
 
-    strcpy(nomeArquivo, DATA_LOCAL);
+    strcpy(nomeArquivo, local);
     strcat(nomeArquivo, code);
-    strcat(nomeArquivo, DATA_EXTENSAO);
+    strcat(nomeArquivo, extensao);
 
     data = fopen(nomeArquivo, "rb");
     if (data) {
@@ -228,7 +228,7 @@ void escreverCabecalho(char code[], boolean refresh) {
     printf("<head>");
     printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
     if (refresh)
-        printf("<meta http-equiv=\"refresh\" content=\"1; url=%s?code=%s\" />", CGI_CAMINHO, code);
+        printf("<meta http-equiv=\"refresh\" content=\"0; url=%s?code=%s\" />", CGI_CAMINHO, code);
     printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
     printf("<title>Jogo de CAP</title>");
     printf("</head>");
@@ -285,25 +285,31 @@ void salvarLeaderboard(tPlacar placar[], int posicoes) {
 void escreverLeaderboard(tPlacar placar[], int posicoes) {
     int i;
 
-    printf("<html>");
-    printf("<head>");
-    printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
-    printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
-    printf("<title>Jogo de CAP</title>");
-    printf("</head>");
-    printf("<body>");
-    printf("<table>");
-    printf("<tr>");
-    printf("<th>#</th>");
-    printf("<th>NOME</th>");
-    printf("<th>PONTUACAO</th>");
-    printf("</tr>");
+    printf("<html>\n"
+           "   <head>\n"
+           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
+           "      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
+           "      <title>Jogo de CAP</title>\n"
+           "   </head>\n"
+           "   <body>\n"
+           "      <table>\n"
+           "         <tr>\n"
+           "            <th>#</th>\n"
+           "            <th>NOME</th>\n"
+           "            <th>PONTUACAO</th>\n"
+           "         </tr>\n",
+           CSS_LOCAL);
     for (i = 0; i < posicoes; ++i) {
-        printf("<tr><td>%d</td><td>%s</td><td>%.3lf</td></tr>", i + 1, placar[i].nome, placar[i].pontuacao);
+        printf("         <tr>\n"
+               "            <td>%d</td>\n"
+               "            <td>%s</td>\n"
+               "            <td>%.3lf</td>\n"
+               "         </tr>\n",
+               i + 1, placar[i].nome, placar[i].pontuacao);
     }
-    printf("</table>");
-    printf("</body>");
-    printf("</html>");
+    printf("      </table>\n"
+           "   </body>\n"
+           "</html>\n");
 }
 
 long int tamanhoArquivo(FILE * arquivo) {
@@ -317,38 +323,41 @@ long int tamanhoArquivo(FILE * arquivo) {
 }
 
 void fimDeJogo() {
-    printf("<html>");
-    printf("<head>");
-    printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
-    printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
-    printf("<title>Jogo de CAP</title>");
-    printf("</head>");
-    printf("<body>");
-    printf("<div class=\"centro_absoluto\">");
-    printf("<a>Obrigado por jogar!</a>");
-    printf("</div>");
-    printf("</body>");
-    printf("</html>");
+    printf("<html>\n"
+           "   <head>\n"
+           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
+           "      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
+           "      <title>Jogo de CAP</title>\n"
+           "   </head>\n"
+           "   <body>\n"
+           "      <div class=\"centro_absoluto\">\n"
+           "         <a>Obrigado por jogar!</a>\n"
+           "      </div>\n"
+           "   </body>\n"
+           "</html>\n",
+           CSS_LOCAL);
 }
 
 void pedirNomeParaLeaderboard (int contadorDeCliques, tCardPar cardS) {
-    printf("<html>");
-    printf("<head>");
-    printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
-    printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
-    printf("<title>Jogo de CAP</title>");
-    printf("</head>");
-    printf("<body>");
-    printf("<div class=\"centro_absoluto\">");
-    printf("Obrigado por jogar!<br>Insira seu nome para o placar!<br>");
-    printf("<form action=%s method=\"get\">", CGI_CAMINHO);
-    printf("<input type=\"hidden\" name=\"Leaderboard\" value=\"Leaderboard\">");
-    printf("<input type=\"hidden\" name=\"d\" value=\"%dx%d\">", cardS.linhas, cardS.colunas);
-    printf("<input type=\"hidden\" name=\"jogadas\" value=\"%d\">", contadorDeCliques);
-    printf("<input type=\"text\" name=\"nome\" maxlength=%d>", LEADERBOARD_NOME_TAMANHO-1);
-    printf("<input type=\"submit\">");
-    printf("</form>");
-    printf("</div>");
-    printf("</body>");
-    printf("</html>");
+    printf("<html>\n"
+           "   <head>\n"
+           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
+           "      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
+           "      <title>Jogo de CAP</title>\n"
+           "   </head>\n"
+           "   <body>\n"
+           "      <div class=\"centro_absoluto\">\n"
+           "          Obrigado por jogar!<br>\n"
+           "          Insira seu nome para o placar!<br>\n"
+           "          <form action=%s method=\"get\">\n"
+           "              <input type=\"hidden\" name=\"Leaderboard\" value=\"Leaderboard\">\n"
+           "              <input type=\"hidden\" name=\"d\" value=\"%dx%d\">\n"
+           "              <input type=\"hidden\" name=\"jogadas\" value=\"%d\">\n"
+           "              <input type=\"text\" name=\"nome\" maxlength=%d>\n"
+           "              <input type=\"submit\">\n"
+           "          </form>\n"
+           "      </div>\n"
+           "   </body>\n"
+           "</html>\n"
+            , CSS_LOCAL, CGI_CAMINHO, cardS.linhas, cardS.colunas, contadorDeCliques, LEADERBOARD_NOME_TAMANHO-1);
 }
