@@ -71,22 +71,23 @@ long int tamanhoArquivo(FILE * arquivo);
 int ordenarLeaderboard(const void *s1, const void *s2);
 
 void recuperarLeaderboard(tPlacar placar[], int *);
-void preencherLeaderboard(int, int, tPlacar []);
+void preencherLeaderboard(int, tPlacar []);
 void salvarLeaderboard(tPlacar [], int);
+void escreverLeaderboard(tPlacar [], int);
+void paginaLeaderboard(int);
+void pedirNomeParaLeaderboard (char []);
+void processarLeaderboard(int, int, tCardPar, char[]);
+void adicionarAoLeaderboard(int, int, tCardPar, char *, char []);
 
 void escolherCards(tInstancia [][COLUNAS_MAX], tCardPar);
 void preencherMatriz(int [][COLUNAS_MAX], int, tCardPar);
+
 void novoJogo(char [], tInstancia[][COLUNAS_MAX], tCardPar);
 void escreverCorpo(char [], tInstancia [][COLUNAS_MAX], tCardPar, boolean, int, boolean);
 void salvarProgresso(char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar cardS, boolean, int);
 void recuperarProgresso(char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar *, boolean *, int *);
 void proximoPasso(char [], tInstancia [][COLUNAS_MAX], tCardPar, int, boolean);
-void escreverCabecalho(char [], boolean, int);
 void analisarEntrada(char [], char *, tCardPar *, short int *, char *);
-void escreverLeaderboard(tPlacar [], int);
-void paginaLeaderboard(int);
 
-void pedirNomeParaLeaderboard (char []);
-void processarLeaderboard(int, int, tCardPar, char[]);
 void fimDeJogo();
-void adicionarAoLeaderboard(int, int, tCardPar, char *, char []);
+void escreverCabecalho(char [], boolean, int);

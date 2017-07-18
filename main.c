@@ -55,10 +55,13 @@ int main() {
 
                 // Adiciona um novo usuário ao placar
                 adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome, code);
-            }
 
-            // Mostra página do placar
-            paginaLeaderboard(LEADERBOARD_POSICOES);
+                fimDeJogo();
+            } else {
+
+                // Mostra página do placar
+                paginaLeaderboard(LEADERBOARD_POSICOES);
+            }
 
         }
     } else {

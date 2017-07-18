@@ -63,7 +63,7 @@ void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
  * Objetivo: checar se um int n existe em uma matriz de int
  * Parâmetros formais:
  *      Dados de Entrada:
- *              int matriz[LINHAS_MAX][COLUNAS_MAX] : matriz LINHAS_MAX x COLUNAS_MAX de int a ser verificada
+ *              int matriz[][COLUNAS_MAX] : matriz LINHAS_MAX x COLUNAS_MAX de int a ser verificada
  *              int n : número a ser encontrado na matriz
  *              tCardPar cardS : contém as reais dimensões da matriz
  *      Valor de Retorno: boolean

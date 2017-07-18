@@ -58,7 +58,9 @@ void analisarEntrada(char *dados, char code[], tCardPar *cardS, short int *leade
  * Objetivo: salva o progresso de uma instância do jogo
  * Parâmetros formais:
  *      Dados de entrada:
- *              char code[] : código da instância do jogo
+ *              char local[] : posição relativa do arquivo de dados
+ *              char extensao[] : extensão do arquivo de dados
+ *              char code[] : código da instância do jogo / nome do arquivo de dados
  *              tInstancia cardFF[][COLUNAS_MAX] : matriz contendo a imagem de cada posição
  *              tCardPar cardS : contém as informações do último par de cartas selecionado anteriormente, além da dimensão do jogo
  *              boolean recarregarPagina : flag de recarregamento da página
@@ -96,14 +98,16 @@ void salvarProgresso(char local[], char extensao[], char code[], tInstancia card
  * Objetivo: recuperar o progresso de uma instância do jogo
  * Parâmetros formais:
  *      Dados de entrada:
- *          char code[DATA_TAMANHO] : código da instância do jogo
+ *          char local[] : posição relativa do arquivo de dados
+ *          char extensao[] : extensão do arquivo de dados
+ *          char code[] : código da instância do jogo / nome do arquivo de dados
  *      Dados de saida:
- *          tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] : matriz LINHAS_MAX x COLUNAS_MAX de tInstancia recuperada do arquivo de progresso
- *          tCardPar *cardS : tCardPar recuperado do arquivo de progresso
- *          boolean *refresh : flag de refresh recuperado do arquivo de progresso
- *          int *contadorDeCliques : contagem de cards viradas recuperada do arquivo de progresso
+ *          tInstancia cardFF[][COLUNAS_MAX] : triz contendo a imagem de cada posição
+ *          tCardPar *cardS : contém as informações do último par de cartas selecionado anteriormente, além da dimensão do jogo
+ *          boolean *recarregarPagina : flag de recarregamento de arquivo
+ *          int *contadorDeCliques : contém a contagem de rounds
  */
-void recuperarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar *cardS, boolean *refresh, int *contadorDeCliques) {
+void recuperarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar *cardS, boolean *recarregarPagina, int *contadorDeCliques) {
     char aux[RSC_NOME_TAMANHO];
     int i = 0, j = 0;
     char *nomeArquivo;
@@ -114,55 +118,63 @@ void recuperarProgresso(char local[], char extensao[], char code[], tInstancia c
 
     nomeArquivo = (char *) malloc(strlen(local) + strlen(code) + strlen(extensao) + 1);
 
-    strcpy(nomeArquivo, local);
-    strcat(nomeArquivo, code);
-    strcat(nomeArquivo, extensao);
+    if (nomeArquivo) {
+        strcpy(nomeArquivo, local);
+        strcat(nomeArquivo, code);
+        strcat(nomeArquivo, extensao);
 
-    data = fopen(nomeArquivo, "rb");
-    if (data) {
-        tamanho = tamanhoArquivo(data);
+        data = fopen(nomeArquivo, "rb");
+        if (data) {
+            tamanho = tamanhoArquivo(data);
 
-        buffer = (char *) malloc((size_t) (tamanho + 1));
-        if (buffer) {
-            if (fread(buffer, (size_t) tamanho, 1, data) == 1) {
-                sscanf(buffer, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d", &cardSBuffer.card1.X,
-                       &cardSBuffer.card1.Y, &cardSBuffer.card2.X, &cardSBuffer.card2.Y, refresh, contadorDeCliques,
-                       &cardS->linhas, &cardS->colunas);
+            buffer = (char *) malloc((size_t) (tamanho + 1));
+            if (buffer) {
+                if (fread(buffer, (size_t) tamanho, 1, data) == 1) {
+                    sscanf(buffer, "card1:%d,%d&card2:%d,%d&refresh=%d&cardFlip=%d&dim=%dx%d", &cardSBuffer.card1.X,
+                           &cardSBuffer.card1.Y, &cardSBuffer.card2.X, &cardSBuffer.card2.Y, recarregarPagina,
+                           contadorDeCliques,
+                           &cardS->linhas, &cardS->colunas);
 
-                if (cardSBuffer.card1.X != -1 && cardS->card1.X != -1) {
-                    cardS->card2.X = cardSBuffer.card1.X;
-                    cardS->card2.Y = cardSBuffer.card1.Y;
-                }
-
-                char *token;
-                token = strtok(buffer, "\n");
-                while (token != NULL) {
-                    if (sscanf(token, "status:%d&file:%s", &cardFF[i][j].status, aux)) {
-                        if (cardFF[i][j].status)
-                            strcpy(cardFF[i][j].nome, aux);
-                        else
-                            strcpy(cardFF[i][j].nome, RSC_OK);
-
-
-                        ++j;
-                        if (j >= cardS->colunas)
-                            ++i, j = 0;
+                    if (cardSBuffer.card1.X != -1 && cardS->card1.X != -1) {
+                        cardS->card2.X = cardSBuffer.card1.X;
+                        cardS->card2.Y = cardSBuffer.card1.Y;
                     }
 
-                    token = strtok(NULL, "\n");
+                    char *token;
+                    token = strtok(buffer, "\n");
+                    while (token != NULL) {
+                        if (sscanf(token, "status:%d&file:%s", &cardFF[i][j].status, aux)) {
+                            if (cardFF[i][j].status)
+                                strcpy(cardFF[i][j].nome, aux);
+                            else
+                                strcpy(cardFF[i][j].nome, RSC_OK);
+
+
+                            ++j;
+                            if (j >= cardS->colunas)
+                                ++i, j = 0;
+                        }
+
+                        token = strtok(NULL, "\n");
+                    }
+                } else {
+                    printf("Erro na leitura do progresso feito<br>");
                 }
+
+                free(buffer);
             } else {
-                printf("Erro na leitura do progresso feito<br>");
+                printf("Erro ao alocar memoria para leitura do progresso feito<br>");
             }
+
+            fclose(data);
         } else {
-            printf("Erro ao alocar memoria para leitura do progresso feito<br>");
+            printf("Erro ao abrir arquivo de progresso<br>");
         }
-        free(buffer);
+
+        free(nomeArquivo);
     } else {
-        printf("Erro ao abrir arquivo de progresso<br>");
+        printf("Erro ao alocar memoria para leitura do progresso feito<br>");
     }
-    fclose(data);
-    free(nomeArquivo);
 }
 
 /*
@@ -170,10 +182,10 @@ void recuperarProgresso(char local[], char extensao[], char code[], tInstancia c
  * Objetivo: escreve o conteúdo da página
  * Parâmetros formais:
  *      Dados de entrada:
- *              char code[DATA_TAMANHO] : código da instância do jogo
- *              tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] :  matriz LINHAS_MAX x COLUNAS_MAX de tInstancia contendo os dados de cada tCard
- *              tCardPar cardS : contém informações sobre o tamanho real da matriz e o último par de cards selecionado anteriormente
- *              boolean recarregarPagina : flag que indica se a página deve ser recarregada
+ *              char code[] : código da instância do jogo
+ *              tInstancia cardFF[][COLUNAS_MAX] :  matriz contendo a imagem de cada posição
+ *              tCardPar cardS : contém as informações do último par de cartas selecionado anteriormente, além da dimensão do jogo
+ *              boolean recarregarPagina : flag de recarregamento da página
  *              int timeout : tempo de espera antes da página ser recarregada (segundos)
  */
 void escreverCorpo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, boolean recarregarPagina, int timeout, boolean novoJogo) {
@@ -237,6 +249,14 @@ void escreverCabecalho(char code[], boolean recarregarPagina, int timeout) {
            "   </head>\n", CSS_LOCAL);
 }
 
+/*
+ * Procedimento recuperarLeaderboard
+ * Objetivo: recuperar o placar do jogo
+ * Parâmetros formais:
+ *      Dados de saida:
+ *          int posicoes : quantidade de posições no placar
+ *          tPlacar placar[] : placar corrente
+ */
 void recuperarLeaderboard(tPlacar placar[], int *posicoes) {
     FILE * arquivoLeaderboard = NULL;
     char nomeArquivo[strlen(DATA_LOCAL) + strlen(LEADERBOARD_NOME) + strlen(DATA_EXTENSAO) + 1], * buffer, * token;
@@ -268,6 +288,14 @@ void recuperarLeaderboard(tPlacar placar[], int *posicoes) {
     }
 }
 
+/*
+ * Procedimento salvarProgresso
+ * Objetivo: salva o leaderboard do jogo
+ * Parâmetros formais:
+ *      Dados de entrada:
+ *          int posicoes : quantidade de posições no placar
+ *          tPlacar placar[] : placar corrente
+ */
 void salvarLeaderboard(tPlacar placar[], int posicoes) {
     int i;
     FILE *data = NULL;
@@ -286,6 +314,14 @@ void salvarLeaderboard(tPlacar placar[], int posicoes) {
     fclose(data);
 }
 
+/*
+ * Procedimento escreverLeaderboard
+ * Objetivo: escreve o conteúdo da página de leaderboard
+ * Parâmetros formais:
+ *      Dados de entrada:
+ *          int posicoes : quantidade de posições no placar
+ *          tPlacar placar[] : placar corrente
+ */
 void escreverLeaderboard(tPlacar placar[], int posicoes) {
     int i;
 
@@ -316,6 +352,15 @@ void escreverLeaderboard(tPlacar placar[], int posicoes) {
            "</html>\n");
 }
 
+/*
+ * Função tamanhoArquivo
+ * Objetivo: descobrir o tamanho de um arquivo
+ * Parâmetros formais:
+ *      Dados de Entrada:
+ *          FILE * arquivo : arquivo-alvo
+ * Valor de retorno:
+ *      long int : tamanho do arquivo-alvo
+ */
 long int tamanhoArquivo(FILE * arquivo) {
     long int tamanho;
 
@@ -326,30 +371,39 @@ long int tamanhoArquivo(FILE * arquivo) {
     return tamanho;
 }
 
+/*
+ * Procedimento fimDeJogo
+ * Objetivo: Escrever a página de fim de jogo
+*/
 void fimDeJogo() {
-    printf("<html>\n"
-           "   <head>\n"
-           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
-           "      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
-           "      <title>Jogo de CAP</title>\n"
-           "   </head>\n"
-           "   <body>\n"
+    printf("<html>\n");
+
+    escreverCabecalho("-1", false, -1);
+
+    printf("   <body>\n"
            "      <div class=\"centro_absoluto\">\n"
-           "         <a>Obrigado por jogar!</a>\n"
+           "         Obrigado por jogar!<br>\n"
+           "         <form action=\"%s\" method=\"get\">\n"
+           "            <input type=\"submit\" name=\"Leaderboard\" value=\"Leaderboard\">\n"
+           "         </form>"
            "      </div>\n"
            "   </body>\n"
-           "</html>\n",
-           CSS_LOCAL);
+           "</html>\n", CGI_CAMINHO);
 }
 
+/*
+ * Procedimento pedirNomeParaLeaderboard
+ * Objetivo : Escrever uma página pedindo o nome para o placar
+ * Parâmetros formais :
+ *      Dados de entrada:
+ *          char code[] : código do jogo
+ */
 void pedirNomeParaLeaderboard (char code[]) {
-    printf("<html>\n"
-           "   <head>\n"
-           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
-           "      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
-           "      <title>Jogo de CAP</title>\n"
-           "   </head>\n"
-           "   <body>\n"
+    printf("<html>\n");
+
+    escreverCabecalho("-1", false, -1);
+
+    printf("   <body>\n"
            "      <div class=\"centro_absoluto\">\n"
            "          Obrigado por jogar!<br>\n"
            "          Insira seu nome para o placar!<br>\n"
@@ -362,5 +416,5 @@ void pedirNomeParaLeaderboard (char code[]) {
            "      </div>\n"
            "   </body>\n"
            "</html>\n"
-            , CSS_LOCAL, CGI_CAMINHO, code, LEADERBOARD_NOME_TAMANHO-1);
+            , CGI_CAMINHO, code, LEADERBOARD_NOME_TAMANHO-1);
 }

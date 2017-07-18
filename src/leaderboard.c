@@ -14,11 +14,11 @@ void paginaLeaderboard(int max_posicoes) {
     tPlacar placar[max_posicoes];
     int posicoes;
 
+    // Preenche posições nulas
+    preencherLeaderboard(max_posicoes, placar);
+
     // Recupera leaderboard do arquivo
     recuperarLeaderboard(placar, &posicoes);
-
-    // Preenche posições nulas
-    preencherLeaderboard(posicoes, max_posicoes, placar);
 
     // Mostra leaderboard
     escreverLeaderboard(placar, max_posicoes);
@@ -32,10 +32,14 @@ void paginaLeaderboard(int max_posicoes) {
  *              int contadorDeCliques : número de rounds corridos
  *              tCardPar cardS : contém as dimensões do jogo
  *              char * nome : nome do jogador
+ *              char code[] : código da instancia do jogo
 */
 void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char * nome, char code[]) {
     tPlacar placar[max_posicoes + 1];
     int posicoes;
+
+    // Preenche posições nulas
+    preencherLeaderboard(max_posicoes, placar);
 
     // Recupera leaderboard do arquivo
     recuperarLeaderboard(placar, &posicoes);
@@ -44,9 +48,6 @@ void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar ca
     strcpy(placar[max_posicoes].nome, nome);
     placar[max_posicoes].pontuacao = (cardS.linhas * cardS.colunas * 100) / contadorDeCliques;
     strcpy(placar[max_posicoes].code, code);
-
-    // Preenche posições nulas
-    preencherLeaderboard(posicoes, max_posicoes, placar);
 
     // Ordena novo leaderboard
     qsort(placar, (size_t) (max_posicoes + 1), sizeof(tPlacar), &ordenarLeaderboard);
@@ -60,21 +61,18 @@ void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar ca
  * Objetivo: preencher posições restantes do placar
  * Parâmetros formais:
  *          Dados de entrada:
- *              int posicoes : número de posições já preenchidas
  *              int max_posicoes : número máximo de posições no leaderboard
  *          Dados de saída:
  *              tPlacar placar[] : placar preenchido
  *
  */
-void preencherLeaderboard(int posicoes, int max_posicoes, tPlacar placar[]) {
+void preencherLeaderboard(int max_posicoes, tPlacar placar[]) {
     int i;
 
-    if (posicoes < max_posicoes) {
-        for (i = posicoes; i < max_posicoes; ++i) {
-            placar[i].pontuacao = 0;
-            strcpy(placar[i].nome, "---");
-            strcpy(placar[i].code, "-1");
-        }
+    for (i = 0; i < max_posicoes; ++i) {
+        placar[i].pontuacao = 0;
+        strcpy(placar[i].nome, "---");
+        strcpy(placar[i].code, "-1");
     }
 }
 
@@ -86,6 +84,7 @@ void preencherLeaderboard(int posicoes, int max_posicoes, tPlacar placar[]) {
  *              int max_posicoes : número máximo de posições no leaderboard
  *              int contadorDeCliques : número de rounds corridos
  *              tCardPar cardS : contém as dimensões do jogo
+ *              char code[] : código da instancia do jogo
  */
 void processarLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char code[]) {
     tPlacar placar[max_posicoes];
