@@ -33,7 +33,7 @@ void paginaLeaderboard(int max_posicoes) {
  *              tCardPar cardS : contém as dimensões do jogo
  *              char * nome : nome do jogador
 */
-void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char * nome) {
+void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char * nome, char code[]) {
     tPlacar placar[max_posicoes + 1];
     int posicoes;
 
@@ -42,7 +42,8 @@ void adicionarAoLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar ca
 
     // Adiciona o novo usuário ao fim do leaderboard (posição max_posiçoes)
     strcpy(placar[max_posicoes].nome, nome);
-    placar[max_posicoes].pontuacao = (cardS.linhas*cardS.colunas*100)/contadorDeCliques;
+    placar[max_posicoes].pontuacao = (cardS.linhas * cardS.colunas * 100) / contadorDeCliques;
+    strcpy(placar[max_posicoes].code, code);
 
     // Preenche posições nulas
     preencherLeaderboard(posicoes, max_posicoes, placar);
@@ -72,6 +73,7 @@ void preencherLeaderboard(int posicoes, int max_posicoes, tPlacar placar[]) {
         for (i = posicoes; i < max_posicoes; ++i) {
             placar[i].pontuacao = 0;
             strcpy(placar[i].nome, "---");
+            strcpy(placar[i].code, "-1");
         }
     }
 }
@@ -85,7 +87,7 @@ void preencherLeaderboard(int posicoes, int max_posicoes, tPlacar placar[]) {
  *              int contadorDeCliques : número de rounds corridos
  *              tCardPar cardS : contém as dimensões do jogo
  */
-void processarLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS) {
+void processarLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar cardS, char code[]) {
     tPlacar placar[max_posicoes];
     int posicoes;
 
@@ -95,7 +97,7 @@ void processarLeaderboard(int max_posicoes, int contadorDeCliques, tCardPar card
     // Determina se a pontuação obtida é suficiente para entrar no placar
     if (posicoes < max_posicoes || (placar[posicoes - 1].pontuacao < (cardS.linhas*cardS.colunas*100)/contadorDeCliques)) {
         // É suficiente, pedir o nome do usuário para o leaderboard
-        pedirNomeParaLeaderboard(contadorDeCliques, cardS);
+        pedirNomeParaLeaderboard(code);
     } else {
         // Não é suficiente, exibir mensagem de fim de jogo
         fimDeJogo();

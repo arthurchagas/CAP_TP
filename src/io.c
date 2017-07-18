@@ -17,21 +17,20 @@
  *              int *contadorDeCards : contagem de rounds do jogo
  *              char nome[] : nome do usuário para o leaderboard
  */
-void analisarEntrada(char *dados, char code[], tCardPar *cardS, short int *leaderboard, int * contadorDeCards, char nome[]) {
+void analisarEntrada(char *dados, char code[], tCardPar *cardS, short int *leaderboard, char nome[]) {
     char *token;
 
     if (strstr(dados, "Leaderboard=Leaderboard")) {             // "Leaderboard=Leaderboard"
         *leaderboard = 1;
         if (strstr(dados, "Leaderboard=Leaderboard&")) {        // "Leaderboard=Leaderboard&d=%dx%d&jogadas=%d&nome=%s
             *leaderboard = 2;
+
             token = strtok(dados, "&");
             while (token != NULL) {
-                if (strstr(token, "d=") != NULL)
-                    sscanf(token, "d=%dx%d", &cardS->linhas, &cardS->colunas);
-                else if (strstr(token, "jogadas=") != NULL)
-                    sscanf(token, "jogadas=%d", contadorDeCards);
-                else if (strstr(token, "nome=") != NULL)
+                if (strstr(token, "nome=") != NULL)
                     sscanf(token, "nome=%s", nome);
+                else if (strstr(token, "code=") != NULL)
+                    sscanf(token, "code=%s", code);
 
                 token = strtok(NULL, "&");
             }
@@ -68,12 +67,12 @@ void analisarEntrada(char *dados, char code[], tCardPar *cardS, short int *leade
 void salvarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, boolean recarregarPagina, int contadorDeCliques) {
     int i, j;
     FILE *data = NULL;
-    char nomeArquivo[strlen(DATA_LOCAL) + strlen(code) + strlen(DATA_EXTENSAO) + 1];
+    char nomeArquivo[strlen(local) + strlen(code) + strlen(extensao) + 1];
 
     // Deduz o nome do arquivo com posição relativa
-    strcpy(nomeArquivo, DATA_LOCAL);
+    strcpy(nomeArquivo, local);
     strcat(nomeArquivo, code);
-    strcat(nomeArquivo, DATA_EXTENSAO);
+    strcat(nomeArquivo, extensao);
 
     // Abre o arquivo para escrita
     data = fopen(nomeArquivo, "w");
@@ -105,7 +104,7 @@ void salvarProgresso(char local[], char extensao[], char code[], tInstancia card
  *          int *contadorDeCliques : contagem de cards viradas recuperada do arquivo de progresso
  */
 void recuperarProgresso(char local[], char extensao[], char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar *cardS, boolean *refresh, int *contadorDeCliques) {
-    char aux[RSC_NOME_TAMANHO + RSC_EXTENSAO_TAMANHO];
+    char aux[RSC_NOME_TAMANHO];
     int i = 0, j = 0;
     char *nomeArquivo;
     char *buffer;
@@ -174,46 +173,49 @@ void recuperarProgresso(char local[], char extensao[], char code[], tInstancia c
  *              char code[DATA_TAMANHO] : código da instância do jogo
  *              tInstancia cardFF[LINHAS_MAX][COLUNAS_MAX] :  matriz LINHAS_MAX x COLUNAS_MAX de tInstancia contendo os dados de cada tCard
  *              tCardPar cardS : contém informações sobre o tamanho real da matriz e o último par de cards selecionado anteriormente
- *              boolean refresh : parâmetro a ser repassado para escreverCabeçalho
+ *              boolean recarregarPagina : flag que indica se a página deve ser recarregada
+ *              int timeout : tempo de espera antes da página ser recarregada (segundos)
  */
-void escreverCorpo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, boolean refresh) {
+void escreverCorpo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS, boolean recarregarPagina, int timeout, boolean novoJogo) {
     int i, j;
 
-    printf("<html>");
-    escreverCabecalho(code, refresh);
-    printf("<body>");
+    printf("<html>\n");
+    escreverCabecalho(code, recarregarPagina, timeout);
+    printf("   <body>\n");
 
     for (i = 0; i < cardS.linhas; ++i) {
         for (j = 0; j < cardS.colunas; ++j) {
-            if (cardFF[i][j].status) {
-                if (cardS.card1.X != -1 && cardS.card2.X != -1) {
-                    if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
-                        printf("<img src=%s/%s>", RSC_LOCAL, cardFF[i][j].nome);
+            if (novoJogo) {
+                printf("      <img src=%s/%s>\n", RSC_LOCAL, cardFF[i][j].nome);
+            } else {
+                if (cardFF[i][j].status) {
+                    if (cardS.card1.X != -1 && cardS.card2.X != -1) {
+                        if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
+                            printf("      <img src=%s/%s>\n", RSC_LOCAL, cardFF[i][j].nome);
+                        } else {
+                            printf("      <img src=%s/%s>\n", RSC_LOCAL, RSC_SELECT);
+                        }
                     } else {
-                        printf("<img src=%s/%s>", RSC_LOCAL, RSC_SELECT);
+                        if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
+                            printf("      <img src=%s/%s>\n", RSC_LOCAL, cardFF[i][j].nome);
+                        } else {
+                            printf("      <form action=\"%s\" method=\"get\">\n"
+                                           "         <input type=\"hidden\" name=\"coordX\" value=\"%d\"/>\n"
+                                           "         <input type=\"hidden\" name=\"coordY\" value=\"%d\"/>\n"
+                                           "         <input type=\"hidden\" name=\"code\" value=\"%s\"/>\n"
+                                           "         <input type=\"submit\" value=\"\" class=\"botao_quadrado\" style=\"background-image: url(%s/%s);\"/>\n"
+                                           "      </form>\n", CGI_CAMINHO, i, j, code, RSC_LOCAL, RSC_SELECT);
+                        }
                     }
                 } else {
-                    printf("<form action=\"%s\" method=\"get\">", CGI_CAMINHO);
-                    printf("<input type=\"hidden\" name=\"coordX\" value=\"%d\"/>", i);
-                    printf("<input type=\"hidden\" name=\"coordY\" value=\"%d\"/>", j);
-                    printf("<input type=\"hidden\" name=\"d\" value=\"%dx%d\"/>", cardS.linhas, cardS.colunas);
-                    printf("<input type=\"hidden\" name=\"code\" value=\"%s\"/>", code);
-                    if ((i == cardS.card1.X && j == cardS.card1.Y) || (i == cardS.card2.X && j == cardS.card2.Y)) {
-                        printf("<img src=%s/%s>", RSC_LOCAL, cardFF[i][j].nome);
-                    } else {
-                        printf("<input type=\"submit\" value=\"\" class=\"botao_quadrado\" style=\"background-image: url(%s/%s);\"/>",
-                               RSC_LOCAL, RSC_SELECT);
-                    }
-                    printf("</form>");
+                    printf("      <img src=%s/%s>\n", RSC_LOCAL, RSC_OK);
                 }
-            } else {
-                printf("<img src=%s/%s>", RSC_LOCAL, RSC_OK);
             }
         }
-        printf("<br>");
+        printf("      <br>\n");
     }
-    printf("</body>");
-    printf("</html>");
+    printf("   </body>\n"
+           "</html>\n");
 }
 
 /*
@@ -221,17 +223,18 @@ void escreverCorpo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS
  * Objetivo: escrever conteúdo da tag <head> da página
  * Parâmetros formais:
  *      Dados de Entrada:
- *              char code[DATA_TAMANHO] : código da instância do jogo
- *              boolean refresh : flag que indica se a página deve ser recarregada após 1 segundo
+ *              char code[] : código da instância do jogo
+ *              boolean recarregarPagina : flag que indica se a página deve ser recarregada
+ *              int timeout : tempo de espera antes da página ser recarregada (segundos)
  */
-void escreverCabecalho(char code[], boolean refresh) {
-    printf("<head>");
-    printf("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />");
-    if (refresh)
-        printf("<meta http-equiv=\"refresh\" content=\"0; url=%s?code=%s\" />", CGI_CAMINHO, code);
-    printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>", CSS_LOCAL);
-    printf("<title>Jogo de CAP</title>");
-    printf("</head>");
+void escreverCabecalho(char code[], boolean recarregarPagina, int timeout) {
+    printf("   <head>\n"
+           "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n");
+    if (recarregarPagina)
+        printf("      <meta http-equiv=\"refresh\" content=\"%d; url=%s?code=%s\" />\n", timeout, CGI_CAMINHO, code);
+    printf("      <link rel=\"stylesheet\" type=\"text/css\" href=\"%s/style.css\"/>\n"
+           "      <title>Jogo de CAP</title>\n"
+           "   </head>\n", CSS_LOCAL);
 }
 
 void recuperarLeaderboard(tPlacar placar[], int *posicoes) {
@@ -254,13 +257,14 @@ void recuperarLeaderboard(tPlacar placar[], int *posicoes) {
 
         token = strtok(buffer, "\n");
         while (token != NULL) {
-            sscanf(token, "Nome:%s Pontuacao:%lf", placar[*posicoes].nome, &placar[*posicoes].pontuacao);
+            sscanf(token, "Nome:%s Code:%s Pontuacao:%lf", placar[*posicoes].nome, placar[*posicoes].code, &placar[*posicoes].pontuacao);
 
             ++(*posicoes);
             token = strtok(NULL, "\n");
         }
 
         fclose(arquivoLeaderboard);
+        free(buffer);
     }
 }
 
@@ -276,7 +280,7 @@ void salvarLeaderboard(tPlacar placar[], int posicoes) {
     data = fopen(nomeArquivo, "w");
     if (data != NULL) {
         for (i = 0; i < posicoes; ++i)
-            fprintf(data, "Nome:%s Pontuacao:%lf\n", placar[i].nome, placar[i].pontuacao);
+            fprintf(data, "Nome:%s Code:%s Pontuacao:%lf\n", placar[i].nome, placar[i].code, placar[i].pontuacao);
     }
     fflush(data);
     fclose(data);
@@ -317,7 +321,7 @@ long int tamanhoArquivo(FILE * arquivo) {
 
     fseek(arquivo, 0, SEEK_END);
     tamanho = ftell(arquivo);
-    fseek(arquivo, 0, SEEK_SET);
+    rewind(arquivo);
 
     return tamanho;
 }
@@ -338,7 +342,7 @@ void fimDeJogo() {
            CSS_LOCAL);
 }
 
-void pedirNomeParaLeaderboard (int contadorDeCliques, tCardPar cardS) {
+void pedirNomeParaLeaderboard (char code[]) {
     printf("<html>\n"
            "   <head>\n"
            "      <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\" />\n"
@@ -351,13 +355,12 @@ void pedirNomeParaLeaderboard (int contadorDeCliques, tCardPar cardS) {
            "          Insira seu nome para o placar!<br>\n"
            "          <form action=%s method=\"get\">\n"
            "              <input type=\"hidden\" name=\"Leaderboard\" value=\"Leaderboard\">\n"
-           "              <input type=\"hidden\" name=\"d\" value=\"%dx%d\">\n"
-           "              <input type=\"hidden\" name=\"jogadas\" value=\"%d\">\n"
+           "              <input type=\"hidden\" name=\"code\" value=\"%s\"/>\n"
            "              <input type=\"text\" name=\"nome\" maxlength=%d>\n"
            "              <input type=\"submit\">\n"
            "          </form>\n"
            "      </div>\n"
            "   </body>\n"
            "</html>\n"
-            , CSS_LOCAL, CGI_CAMINHO, cardS.linhas, cardS.colunas, contadorDeCliques, LEADERBOARD_NOME_TAMANHO-1);
+            , CSS_LOCAL, CGI_CAMINHO, code, LEADERBOARD_NOME_TAMANHO-1);
 }

@@ -53,7 +53,6 @@ void escolherCards(tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
     for (i = 0; i < cardS.linhas; ++i) {
         for (j = 0; j < cardS.colunas; ++j) {
             strcpy(cardFF[i][j].nome, rsc[numerosAleatorios[i][j]]);
-            strcat(cardFF[i][j].nome, RSC_EXTENSAO);
             cardFF[i][j].status = true;
         }
     }

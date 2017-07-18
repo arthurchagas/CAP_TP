@@ -27,7 +27,7 @@ int main() {
 
     if (queryString) {
         // Extrai informações da query_string
-        analisarEntrada(getenv("QUERY_STRING"), code, &cardS, &leaderboard, &contadorDeCliques, nome);
+        analisarEntrada(getenv("QUERY_STRING"), code, &cardS, &leaderboard, nome);
 
         if (!leaderboard) {
             // Codigo do jogo é -1, sinalizando novo jogo
@@ -50,12 +50,16 @@ int main() {
             }
         } else {
             if (leaderboard == 2) {
+                recuperarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, &cardS, &recarregarPagina,
+                                   &contadorDeCliques);
+
                 // Adiciona um novo usuário ao placar
-                adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome);
+                adicionarAoLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, nome, code);
             }
 
             // Mostra página do placar
             paginaLeaderboard(LEADERBOARD_POSICOES);
+
         }
     } else {
         printf("Erro ao alocar memoria para leitura de dados<br>");
@@ -86,7 +90,7 @@ void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
         if (recarregarPagina) {
             // Página foi recarregada, gerar próxima página
 
-            escreverCorpo(code, cardFF, cardS, false);
+            escreverCorpo(code, cardFF, cardS, false, -1, false);
             salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, contadorDeCliques);
         } else {
             if (cardS.card1.X != -1 && cardS.card2.X != -1) {
@@ -98,6 +102,7 @@ void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
 
                         cardFF[cardS.card1.X][cardS.card1.Y].status = false;
                         cardFF[cardS.card2.X][cardS.card2.Y].status = false;
+
                     } else {                                                                                                // É a mesma posição
                         // Resetar cards selecionados
 
@@ -106,21 +111,25 @@ void proximoPasso(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS,
                         cardS.card2.X = -1;
                         cardS.card2.Y = -1;
                     }
+
+                    escreverCorpo(code, cardFF, cardS, true, 0, false);
+                } else {
+                    // Par escolhido, gerar página com tag de recarregamento
+
+                    escreverCorpo(code, cardFF, cardS, true, 1, false);
                 }
 
-                // Par escolhido, gerar página com tag de recarregamento
-                escreverCorpo(code, cardFF, cardS, true);
                 salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, true, contadorDeCliques);
             } else {
 
                 // Primeira card do par selecionada
-                escreverCorpo(code, cardFF, cardS, false);
+                escreverCorpo(code, cardFF, cardS, false, -1, false);
                 salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, contadorDeCliques);
             }
         }
     } else {
         // Fim de jogo
-        processarLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS);
+        processarLeaderboard(LEADERBOARD_POSICOES, contadorDeCliques, cardS, code);
     }
 }
 
@@ -141,7 +150,7 @@ void novoJogo(char code[], tInstancia cardFF[][COLUNAS_MAX], tCardPar cardS) {
     escolherCards(cardFF, cardS);
 
     // Primeira página
-    escreverCorpo(code, cardFF, cardS, false);
+    escreverCorpo(code, cardFF, cardS, true, 3, true);
     salvarProgresso(DATA_LOCAL, DATA_EXTENSAO, code, cardFF, cardS, false, 0);
 }
 
