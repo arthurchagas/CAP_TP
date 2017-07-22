@@ -16,7 +16,7 @@
 #define RSC_QUANTIDADE 24       // Quantidade
 #define RSC_NOME_TAMANHO 32     // Tamanho máximo do nome
 #define RSC_OK "done.png"       // Imagem do par
-#define RSC_SELECT "mmry.png"   // Carta não virada
+#define RSC_SELECT "mmry.jpg"   // Carta não virada
 
 // Dados
 #define DATA_TAMANHO 20         // Tamanho máximo do código de jogo
@@ -59,9 +59,7 @@ typedef struct {
 } tPlacar;
 
 // Constantes
-static const char rsc[RSC_QUANTIDADE][RSC_NOME_TAMANHO] = {"1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png", "9.png", "10.png", "11.png",
-                                                           "12.png", "13.png", "14.png", "15.png", "16.png", "17.png", "18.png", "19.png", "20.png", "21.png",
-                                                           "22.png", "23.png", "24.png"};
+static const char rsc[RSC_QUANTIDADE][RSC_NOME_TAMANHO] = {"0.jpg", "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg", "14.jpg", "15.jpg", "16.jpg", "17.jpg", "18.jpg", "20.jpg", "21.jpg", "22.jpg", "23.jpg", "25.jpg"};
 
 // Protótipos
 boolean existeNaMatriz(int [][COLUNAS_MAX], int, tCardPar);
@@ -70,24 +68,24 @@ boolean checarStatus(tInstancia [][COLUNAS_MAX], tCardPar);
 long int tamanhoArquivo(FILE * arquivo);
 int ordenarLeaderboard(const void *s1, const void *s2);
 
-void recuperarLeaderboard(tPlacar placar[], int *);
+void recuperarLeaderboard(char [], char [], char [], tPlacar placar[], int *);
 void preencherLeaderboard(int, tPlacar []);
-void salvarLeaderboard(tPlacar [], int);
+void salvarLeaderboard(char [], char [], char [], tPlacar [], int);
 void escreverLeaderboard(tPlacar [], int);
-void paginaLeaderboard(int);
-void pedirNomeParaLeaderboard (char []);
-void processarLeaderboard(int, int, tCardPar, char[]);
-void adicionarAoLeaderboard(int, int, tCardPar, char *, char []);
+void paginaLeaderboard(char [], char [], char [], int);
+void pedirNomeParaLeaderboard (char [], char [], char []);
+void processarLeaderboard(char [], char[], char [], char [], char [], int, int, tCardPar, char[]);
+void adicionarAoLeaderboard(char [], char [], char [], int, int, tCardPar, char *, char []);
 
 void escolherCards(tInstancia [][COLUNAS_MAX], tCardPar);
 void preencherMatriz(int [][COLUNAS_MAX], int, tCardPar);
 
-void novoJogo(char [], tInstancia[][COLUNAS_MAX], tCardPar);
-void escreverCorpo(char [], tInstancia [][COLUNAS_MAX], tCardPar, boolean, int, boolean);
+void novoJogo(char [], char [], char [], char [], char [], char [], char [], char [], tInstancia[][COLUNAS_MAX], tCardPar);
+void escreverCorpo(char [], char [], char [], char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar, boolean, int, boolean);
 void salvarProgresso(char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar cardS, boolean, int);
-void recuperarProgresso(char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar *, boolean *, int *);
-void proximoPasso(char [], tInstancia [][COLUNAS_MAX], tCardPar, int, boolean);
+void recuperarProgresso(char [], char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar *, boolean *, int *, int);
+void proximoPasso(char [], char [], char [], char [], char [], char [], char [], char [], tInstancia [][COLUNAS_MAX], tCardPar, int, boolean, int, char []);
 void analisarEntrada(char [], char *, tCardPar *, short int *, char *);
 
-void fimDeJogo();
-void escreverCabecalho(char [], boolean, int);
+void fimDeJogo(char [], char []);
+void escreverCabecalho(char [], char [], char [], boolean, int);
